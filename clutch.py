@@ -290,32 +290,42 @@ def handle_matrix(message):
 
     bot.reply_to(message, response)
 
-
 @bot.message_handler(commands=['help'])
 def show_help(message):
-    user_id = str(message.chat.id)
+    try:
+        user_id = str(message.chat.id)
 
-    with open('owner.txt', "r") as file:
-        owners = file.read().splitlines()
-
-    help_text = '''Available commands:
-    /matrix : Method For Bgmi Servers. 
-    /rulesanduse : Please Check Before Use !!.
-    /plan : Checkout Our Botnet Rates.
+        # Basic help text for all users
+        help_text = '''Available Commands:
+    - /matrix : Execute a BGMI server attack (specific conditions apply).
+    - /rulesanduse : View usage rules and important guidelines.
+    - /plan : Check available plans and pricing for the bot.
+    - /status : View ongoing attack details.
+    - /id : Retrieve your user ID.
     '''
 
-    if user_id in owners:
-        help_text += '''
-To See Admin Commands:
-    /admincmd : Shows All Admin Commands.
-        '''
-
-    help_text += ''' 
-JOIN CHANNEL - @insan3cheats
-BUY / OWNER - @InsaneCheatsOwner
+        # Check if the user is an admin and append admin commands
+        if user_id in admin_id:
+            help_text += '''
+Admin Commands:
+    - /add <user_id> <time_in_minutes> : Add a user with specified time.
+    - /remove <user_id> : Remove a user from the authorized list.
+    - /allusers : List all authorized users.
+    - /broadcast : Send a broadcast message to all users.
     '''
 
-    bot.reply_to(message, help_text)
+        # Footer with channel and owner information
+        help_text += ''' 
+JOIN CHANNEL - @MATRIX_CHEATS
+BUY / OWNER - @its_MATRIX_King
+'''
+
+        # Send the constructed help text to the user
+        bot.reply_to(message, help_text)
+    
+    except Exception as e:
+        logging.error(f"Error in /help command: {e}")
+        bot.reply_to(message, "An error occurred while fetching help. Please try again.")
     
 @bot.message_handler(commands=['start'])
 def welcome_start(message):
