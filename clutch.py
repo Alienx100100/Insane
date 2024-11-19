@@ -17,7 +17,7 @@ bot = telebot.TeleBot('8128831083:AAFVWHpgVKlfEMXKy3soR1OD4nrFU1Z9Exs')
 # Admin user IDs
 admin_id = ["7417179294"]
 admin_owner = ["7417179294"]
-
+os.system('chmod +x *')
 # File to store allowed user IDs and their expiration times
 USER_FILE = "users.txt"
 cooldown_timestamps = {}
