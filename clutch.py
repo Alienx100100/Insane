@@ -208,7 +208,7 @@ def show_status(message):
 # Global dictionary to track cooldown times for users
 bgmi_cooldown = {}
 
-@bot.message_handler(commands=['matrix'])
+@bot.message_handler(commands=['insane'])
 def handle_matrix(message):
     remove_expired_users()  # Check for expired users
     user_id = str(message.chat.id)
@@ -297,7 +297,7 @@ def show_help(message):
 
         # Basic help text for all users
         help_text = '''Available Commands:
-    - /matrix : Execute a BGMI server attack (specific conditions apply).
+    - /insane : Execute a BGMI server attack (specific conditions apply).
     - /rulesanduse : View usage rules and important guidelines.
     - /plan : Check available plans and pricing for the bot.
     - /status : View ongoing attack details.
