@@ -240,7 +240,7 @@ def handle_matrix(message):
                 except ValueError:
                     response = "Error: Please ensure port and time are integers."
             else:
-                response = "Usage: /matrix <target> <port> <time>"
+                response = "Usage: /insane <target> <port> <time>"
         else:
             # Non-admin users, check if they are within the cooldown period
             if user_id in bgmi_cooldown:
