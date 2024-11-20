@@ -316,8 +316,8 @@ Admin Commands:
 
         # Footer with channel and owner information
         help_text += ''' 
-JOIN CHANNEL - @MATRIX_CHEATS
-BUY / OWNER - @its_MATRIX_King
+JOIN CHANNEL - @insan3cheats
+BUY / OWNER - @Insaaaanxd
 '''
 
         # Send the constructed help text to the user
