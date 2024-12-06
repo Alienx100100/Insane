@@ -11,7 +11,7 @@ import logging
 import socket
 
 
-bot = telebot.TeleBot(7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU, threaded=False)
+bot = telebot.TeleBot("7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU", threaded=False)
 
 AUTHORIZED_USERS = [7418099890]
 
