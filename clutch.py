@@ -121,11 +121,14 @@ def stop(message):
         return
 
     stop_attack(user_id)
+from requests.exceptions import ReadTimeout
+
 def run_bot():
     while True:
         try:
             print("Bot is running...")
-            bot.polling(none_stop=True, timeout=60)  # Add timeout to prevent long idle periods
+            # Use either polling or infinity_polling
+            bot.infinity_polling(timeout=60, long_polling_timeout=5)
         except ReadTimeout as rt:
             logging.error(f"ReadTimeout occurred: {rt}")
             print(f"ReadTimeout occurred: {rt}")
