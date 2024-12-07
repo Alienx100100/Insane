@@ -12,3 +12,5 @@ asyncio
 supabase
 psycopg2
 psycopg2-binary
+requests
+fake-useragent
