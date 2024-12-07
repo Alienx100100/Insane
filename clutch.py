@@ -380,10 +380,83 @@ def show_users(message):
 ongoing_attacks = []
 attack_cooldown = {}
 
+@bot.message_handler(commands=['proxy'])
+def proxy_command(message):
+    user_id = str(message.chat.id)
+    users = read_users()
+    
+    if user_id not in admin_owner and user_id not in users:
+        bot.reply_to(message, "⛔️ 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱")
+        return
+        
+    try:
+        proxy = get_random_proxy()
+        response = f"""
+🌐 𝗣𝗥𝗢𝗫𝗬 𝗦𝗧𝗔𝗧𝗨𝗦
+━━━━━━━━━━━━━━━
+✨ 𝗦𝘁𝗮𝘁𝘂𝘀: Active
+🔒 𝗣𝗿𝗼𝘁𝗲𝗰𝘁𝗶𝗼𝗻: Enabled
+⚡️ 𝗟𝗮𝘁𝗲𝗻𝗰𝘆: Optimized
+"""
+        bot.reply_to(message, response)
+        
+        # Send actual proxy details to admin
+        if user_id in admin_owner:
+            admin_response = f"""
+🔒 𝗣𝗥𝗢𝗫𝗬 𝗗𝗘𝗧𝗔𝗜𝗟𝗦
+━━━━━━━━━━━━━━━
+🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
+"""
+            bot.reply_to(message, admin_response)
+            
+    except Exception as e:
+        bot.reply_to(message, "❌ 𝗘𝗿𝗿𝗼𝗿 𝗰𝗵𝗲𝗰𝗸𝗶𝗻𝗴 𝗽𝗿𝗼𝘅𝘆 𝘀𝘁𝗮𝘁𝘂𝘀")
+
+import random
+import requests
+import threading
+import time
+
+# Add these at the top of your code with other imports
+PROXY_LIST = []
+PROXY_SOURCES = [
+    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt',
+    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt',
+    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
+    'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt',
+    'https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/proxies.txt'
+]
+
+def update_proxy_list():
+    global PROXY_LIST
+    while True:
+        temp_proxies = set()
+        for source in PROXY_SOURCES:
+            try:
+                response = requests.get(source, timeout=10)
+                if response.status_code == 200:
+                    proxies = response.text.strip().split('\n')
+                    temp_proxies.update(proxies)
+            except:
+                continue
+        
+        if temp_proxies:
+            PROXY_LIST = list(temp_proxies)
+        time.sleep(1800)  # Update every 30 minutes
+
+def get_random_proxy():
+    if not PROXY_LIST:
+        return None
+    proxy = random.choice(PROXY_LIST)
+    proxy_type = random.choice(['socks4', 'socks5', 'http'])
+    return f"{proxy_type}://{proxy}"
+
 def start_attack_reply(message, target, port, time):
-    username = message.from_user.username if message.from_user.username else message.from_user.first_name
-    user_id = message.from_user.id
-    start_time = datetime.now(IST)
+    try:
+        proxy = get_random_proxy()
+        username = message.from_user.username if message.from_user.username else message.from_user.first_name
+        user_id = message.from_user.id
+        start_time = datetime.now(IST)
     
     # Add attack to ongoing attacks list
     ongoing_attacks.append({
@@ -395,35 +468,32 @@ def start_attack_reply(message, target, port, time):
         'start_time': start_time
     })
     
-    # Format initial attack message for user
-    user_response = f"""
+    # Regular user notification (without proxy details)
+        user_response = f"""
 🚀 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗!
-
+━━━━━━━━━━━━━━━
 👤 𝗨𝘀𝗲𝗿: {username}
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
+🌐 𝗣𝗿𝗼𝘅𝘆: Protected
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%H:%M:%S')} IST
-
-⚡️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
 """
-    bot.reply_to(message, user_response)
+        bot.reply_to(message, user_response)
     
-    # Send notification to admin
-    admin_notification = f"""
+        # Admin notification with proxy details
+        admin_notification = f"""
 🚨 𝗡𝗘𝗪 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗
-
-👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
+━━━━━━━━━━━━━━━
+👤 𝗨𝘀𝗲𝗿: @{username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%Y-%m-%d %H:%M:%S')} IST
-🌐 𝗨𝘀𝗲𝗿 𝗜𝗣: {message.from_user.language_code}
-
-⚠️ 𝗠𝗼𝗻𝗶𝘁𝗼𝗿𝗶𝗻𝗴 𝗮𝘁𝘁𝗮𝗰𝗸 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
+🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
-    for admin in admin_id:
-        bot.send_message(admin, admin_notification)
+        for admin in admin_id:
+            bot.send_message(admin, admin_notification)
     
     try:
         # Execute attack
@@ -454,6 +524,7 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%Y-%m-%d %H:%M:%S')} IST
+🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
@@ -843,7 +914,11 @@ def cleanup_task():
 def run_bot():
     create_tables()
     
-    # Start the cleanup thread
+    # Start proxy updater thread
+    proxy_updater = threading.Thread(target=update_proxy_list, daemon=True)
+    proxy_updater.start()
+    
+    # Start cleanup thread
     cleanup_thread = threading.Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
     
@@ -854,7 +929,3 @@ def run_bot():
         except Exception as e:
             logging.error(f"Bot error: {e}")
             time.sleep(15)
-
-if __name__ == "__main__":
-    run_bot()
-
