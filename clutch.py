@@ -901,10 +901,6 @@ def cleanup_task():
 def run_bot():
     create_tables()
     
-    # Start proxy updater thread
-    proxy_updater = threading.Thread(target=update_proxy_list, daemon=True)
-    proxy_updater.start()
-    
     # Start cleanup thread
     cleanup_thread = threading.Thread(target=cleanup_task, daemon=True)
     cleanup_thread.start()
@@ -916,3 +912,6 @@ def run_bot():
         except Exception as e:
             logging.error(f"Bot error: {e}")
             time.sleep(15)
+
+if __name__ == "__main__":
+    run_bot()
