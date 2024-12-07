@@ -384,6 +384,9 @@ def start_attack_reply(message, target, port, time):
     username = message.from_user.username if message.from_user.username else message.from_user.first_name
     user_id = message.from_user.id
     start_time = datetime.now(IST)
+
+     # Generate proxy for this attack
+    proxy = generate_random_proxy()
     
     # Add attack to ongoing attacks list
     ongoing_attacks.append({
@@ -393,6 +396,7 @@ def start_attack_reply(message, target, port, time):
         'port': port,
         'time': time,
         'start_time': start_time
+        'proxy': proxy
     })
     
     # Format initial attack message for user
@@ -419,6 +423,7 @@ def start_attack_reply(message, target, port, time):
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%Y-%m-%d %H:%M:%S')} IST
 🌐 𝗨𝘀𝗲𝗿 𝗜𝗣: {message.from_user.language_code}
+🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
 
 ⚠️ 𝗠𝗼𝗻𝗶𝘁𝗼𝗿𝗶𝗻𝗴 𝗮𝘁𝘁𝗮𝗰𝗸 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
 """
@@ -454,6 +459,7 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%Y-%m-%d %H:%M:%S')} IST
+🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
@@ -478,6 +484,7 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📅 𝗧𝗶𝗺𝗲: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
+🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
 """
         for admin in admin_id:
             bot.send_message(admin, admin_failure)
