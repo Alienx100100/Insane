@@ -571,7 +571,7 @@ def handle_matrix(message):
         
         # Set cooldown for non-admin users
         if user_id not in admin_owner:
-            attack_cooldown[user_id] = datetime.now(IST) + timedelta(minutes=5)
+            attack_cooldown[user_id] = datetime.now(IST) + timedelta(seconds=5)
             
     except ValueError:
         bot.reply_to(message, "❌ 𝗘𝗿𝗿𝗼𝗿: 𝗣𝗼𝗿𝘁 𝗮𝗻𝗱 𝘁𝗶𝗺𝗲 𝗺𝘂𝘀𝘁 𝗯𝗲 𝗻𝘂𝗺𝗯𝗲𝗿𝘀.")
