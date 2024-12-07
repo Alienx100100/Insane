@@ -395,7 +395,7 @@ def start_attack_reply(message, target, port, time):
         'target': target,
         'port': port,
         'time': time,
-        'start_time': start_time
+        'start_time': start_time,
         'proxy': proxy
     })
     
