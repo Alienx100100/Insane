@@ -423,7 +423,7 @@ def start_attack_reply(message, target, port, time):
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%Y-%m-%d %H:%M:%S')} IST
 🌐 𝗨𝘀𝗲𝗿 𝗜𝗣: {message.from_user.language_code}
-🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
+🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 
 ⚠️ 𝗠𝗼𝗻𝗶𝘁𝗼𝗿𝗶𝗻𝗴 𝗮𝘁𝘁𝗮𝗰𝗸 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
 """
@@ -459,7 +459,7 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%Y-%m-%d %H:%M:%S')} IST
-🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
+🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
@@ -484,7 +484,7 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📅 𝗧𝗶𝗺𝗲: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
-🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
+🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_failure)
@@ -503,7 +503,7 @@ def show_proxy(message):
     response = f"""
 🌐 𝗣𝗿𝗼𝘅𝘆 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱:
 ━━━━━━━━━━━━━━━
-🔒 𝗣𝗿𝗼𝘅𝘆: `{proxy}`
+🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 ⏰ 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
 ℹ️ 𝗡𝗲𝘄 𝗽𝗿𝗼𝘅𝘆 𝗶𝘀 𝗴𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱 𝗳𝗼𝗿 𝗲𝗮𝗰𝗵 𝗮𝘁𝘁𝗮𝗰𝗸
 """
