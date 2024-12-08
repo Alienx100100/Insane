@@ -26,7 +26,7 @@ url = "https://ldmyijysjjaimrbpqmek.supabase.co"
 key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkbXlpanlzamphaW1yYnBxbWVrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjkwNjE5MSwiZXhwIjoyMDQ4NDgyMTkxfQ.mCpuIq0yPRskbuyxjXk57sB99dDqhxZ2YRJxtwaRk3U"
 supabase: Client = create_client(url, key)
 
-bot = telebot.TeleBot('7599785141:AAGokC8HZXRhjcvSkzd1jBSsinBoNSEX6NU')
+bot = telebot.TeleBot('7608952192:AAHuAhO4ajjeDqGRTNTj1NpZR0MgnC4KkdY')
 IST = pytz.timezone('Asia/Kolkata')
 
 # Database connection
@@ -286,95 +286,151 @@ def remove_key(message):
         logging.error(f"Error removing key: {e}")
         bot.reply_to(message, "An error occurred while removing the key.")
 
-@bot.message_handler(commands=['allkeys'])
-def show_all_keys(message):
-    user_id = str(message.chat.id)
-    if user_id not in admin_owner:
+@bot.message_handler(commands=['allusers'])
+def show_users(message):
+    if str(message.chat.id) not in admin_id:
         bot.reply_to(message, "⛔️ Access Denied: Admin only command")
         return
 
     try:
+        # Modified query to get reseller username correctly
         cursor.execute("""
-            SELECT key, duration, created_at 
-            FROM unused_keys 
-            WHERE is_used = FALSE 
-            ORDER BY created_at DESC
-        """)
-        keys = cursor.fetchall()
-        
-        if not keys:
-            bot.reply_to(message, "📝 No unused keys available")
-            return
-
-        response = "🔑 Available Keys:\n\n"
-        ist_tz = pytz.timezone('Asia/Kolkata')
-        
-        for key in keys:
-            key_code = key[0]
-            duration_seconds = float(key[1])
-            created_at = key[2].astimezone(ist_tz)
-            
-            # Convert duration to days, hours, minutes
-            days = int(duration_seconds // (24 * 3600))
-            remaining_seconds = duration_seconds % (24 * 3600)
-            hours = int(remaining_seconds // 3600)
-            minutes = int((remaining_seconds % 3600) // 60)
-            
-            response += f"Key: `{key_code}`\n"
-            if days > 0:
-                response += f"Duration: {days}d {hours}h {minutes}m\n"
-            elif hours > 0:
-                response += f"Duration: {hours}h {minutes}m\n"
-            else:
-                response += f"Duration: {minutes}m\n"
-            response += f"Created: {created_at.strftime('%Y-%m-%d %H:%M:%S')} IST\n\n"
-            
-        bot.reply_to(message, response)
-    except Exception as e:
-        bot.reply_to(message, f"❌ Error fetching keys: {str(e)}")
-
-@bot.message_handler(commands=['allusers'])
-def show_users(message):
-    if str(message.chat.id) not in admin_id:
-        bot.reply_to(message, "Only administrators can view users.")
-        return
-
-    try:
-        cursor.execute("""
-            SELECT user_id, username, key, expiration 
-            FROM users 
-            WHERE expiration > NOW() 
-            ORDER BY expiration DESC
+            SELECT 
+                u.user_id, 
+                u.username, 
+                u.key, 
+                u.expiration, 
+                rt.reseller_id,
+                COALESCE(r.username, rs.username) as reseller_username
+            FROM users u
+            LEFT JOIN reseller_transactions rt ON u.key = rt.key_generated
+            LEFT JOIN resellers r ON rt.reseller_id = r.telegram_id
+            LEFT JOIN users rs ON rt.reseller_id = rs.user_id
+            WHERE u.expiration > NOW()
+            ORDER BY rt.reseller_id NULLS FIRST, u.expiration DESC
         """)
         users = cursor.fetchall()
-        
+
         if not users:
             bot.reply_to(message, "📝 No active users found")
             return
 
-        response = "👥 Active Users:\n\n"
+        response = "👥 𝗔𝗰𝘁𝗶𝘃𝗲 𝗨𝘀𝗲𝗿𝘀:\n\n"
         current_time = datetime.now(IST)
+
+        # Direct Users
+        response += "📌 𝗗𝗶𝗿𝗲𝗰𝘁 𝗨𝘀𝗲𝗿𝘀:\n"
+        for user in users:
+            if user[4] is None:  # No reseller
+                remaining = user[3].astimezone(IST) - current_time
+                response += (
+                    f"👤 User: @{user[1]}\n"
+                    f"🆔 ID: {user[0]}\n"
+                    f"🔑 Key: {user[2]}\n"
+                    f"⏳ Remaining: {remaining.days}d {remaining.seconds//3600}h\n"
+                    f"📅 Expires: {user[3].astimezone(IST).strftime('%Y-%m-%d %H:%M:%S')} IST\n\n"
+                )
+
+        # Reseller Users
+        response += "\n🎯 𝗥𝗲𝘀𝗲𝗹𝗹𝗲𝗿 𝗨𝘀𝗲𝗿𝘀:\n"
+        current_reseller = None
         
         for user in users:
-            user_id, username, key, expiration = user
-            expiration = expiration.astimezone(IST)
-            remaining = expiration - current_time
-            
-            # Calculate remaining time components
-            days = remaining.days
-            hours = remaining.seconds // 3600
-            minutes = (remaining.seconds % 3600) // 60
-            
-            response += (f"🆔 ID: {user_id}\n"
-                        f"👤 User: @{username}\n"
-                        f"🔑 Key: {key}\n"
-                        f"⏳ Remaining: {days}d {hours}h {minutes}m\n"
-                        f"📅 Expires: {expiration.strftime('%Y-%m-%d %H:%M:%S')} IST\n\n")
-        
+            if user[4]:  # Has reseller
+                if current_reseller != user[4]:
+                    current_reseller = user[4]
+                    reseller_username = user[5] if user[5] else "Unknown"
+                    response += f"\n💼 𝗥𝗲𝘀𝗲𝗹𝗹𝗲𝗿: @{reseller_username}\n"
+                    response += f"🆔 𝗜𝗗: {user[4]}\n"
+
+                remaining = user[3].astimezone(IST) - current_time
+                response += (
+                    f"👤 User: @{user[1]}\n"
+                    f"🆔 ID: {user[0]}\n"
+                    f"🔑 Key: {user[2]}\n"
+                    f"⏳ Remaining: {remaining.days}d {remaining.seconds//3600}h\n"
+                    f"📅 Expires: {user[3].astimezone(IST).strftime('%Y-%m-%d %H:%M:%S')} IST\n\n"
+                )
+
         bot.reply_to(message, response)
     except Exception as e:
-        logging.error(f"Error fetching users: {e}")
-        bot.reply_to(message, "❌ Error fetching user details")
+        bot.reply_to(message, f"❌ Error fetching users: {str(e)}")
+
+@bot.message_handler(commands=['allkeys'])
+def show_all_keys(message):
+    if str(message.chat.id) not in admin_owner:
+        bot.reply_to(message, "⛔️ Access Denied: Admin only command")
+        return
+
+    try:
+        # Modified query to get reseller username from users table
+        cursor.execute("""
+            SELECT 
+                k.key, 
+                k.duration, 
+                k.created_at, 
+                rt.reseller_id,
+                COALESCE(r.username, u.username) as username
+            FROM unused_keys k
+            LEFT JOIN reseller_transactions rt ON k.key = rt.key_generated
+            LEFT JOIN resellers r ON rt.reseller_id = r.telegram_id
+            LEFT JOIN users u ON rt.reseller_id = u.user_id
+            WHERE k.is_used = FALSE
+            ORDER BY rt.reseller_id NULLS FIRST, k.created_at DESC
+        """)
+        keys = cursor.fetchall()
+
+        if not keys:
+            bot.reply_to(message, "📝 No unused keys available")
+            return
+
+        response = "🔑 𝗔𝘃𝗮𝗶𝗹𝗮𝗯𝗹𝗲 𝗞𝗲𝘆𝘀:\n\n"
+
+        # Direct Generated Keys
+        response += "📌 𝗗𝗶𝗿𝗲𝗰𝘁 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱:\n"
+        for key in keys:
+            if key[3] is None:  # No reseller
+                duration_seconds = float(key[1])
+                created_at = key[2].astimezone(IST)
+                days = int(duration_seconds // (24 * 3600))
+                remaining = duration_seconds % (24 * 3600)
+                hours = int(remaining // 3600)
+                minutes = int((remaining % 3600) // 60)
+                
+                response += (
+                    f"🔑 Key: `{key[0]}`\n"
+                    f"⏱ Duration: {days}d {hours}h {minutes}m\n"
+                    f"📅 Created: {created_at.strftime('%Y-%m-%d %H:%M:%S')} IST\n\n"
+                )
+
+        # Reseller Generated Keys
+        response += "\n🎯 𝗥𝗲𝘀𝗲𝗹𝗹𝗲𝗿 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱:\n"
+        current_reseller = None
+        
+        for key in keys:
+            if key[3]:  # Has reseller
+                if current_reseller != key[3]:
+                    current_reseller = key[3]
+                    username = key[4] if key[4] else "Unknown"
+                    response += f"\n💼 𝗥𝗲𝘀𝗲𝗹𝗹𝗲𝗿: @{username}\n"
+                    response += f"🆔 𝗜𝗗: {key[3]}\n"
+
+                duration_seconds = float(key[1])
+                created_at = key[2].astimezone(IST)
+                days = int(duration_seconds // (24 * 3600))
+                remaining = duration_seconds % (24 * 3600)
+                hours = int(remaining // 3600)
+                minutes = int((remaining % 3600) // 60)
+
+                response += (
+                    f"🔑 Key: `{key[0]}`\n"
+                    f"⏱ Duration: {days}d {hours}h {minutes}m\n"
+                    f"📅 Created: {created_at.strftime('%Y-%m-%d %H:%M:%S')} IST\n\n"
+                )
+
+        bot.reply_to(message, response)
+    except Exception as e:
+        bot.reply_to(message, f"❌ Error fetching keys: {str(e)}")
 
 
 ongoing_attacks = []
@@ -384,9 +440,6 @@ def start_attack_reply(message, target, port, time):
     username = message.from_user.username if message.from_user.username else message.from_user.first_name
     user_id = message.from_user.id
     start_time = datetime.now(IST)
-
-     # Generate proxy for this attack
-    proxy = generate_random_proxy()
     
     # Add attack to ongoing attacks list
     ongoing_attacks.append({
@@ -395,8 +448,7 @@ def start_attack_reply(message, target, port, time):
         'target': target,
         'port': port,
         'time': time,
-        'start_time': start_time,
-        'proxy': proxy
+        'start_time': start_time
     })
     
     # Format initial attack message for user
@@ -423,7 +475,6 @@ def start_attack_reply(message, target, port, time):
 ⏱️ 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {time} seconds
 📅 𝗦𝘁𝗮𝗿𝘁𝗲𝗱: {start_time.strftime('%Y-%m-%d %H:%M:%S')} IST
 🌐 𝗨𝘀𝗲𝗿 𝗜𝗣: {message.from_user.language_code}
-🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 
 ⚠️ 𝗠𝗼𝗻𝗶𝘁𝗼𝗿𝗶𝗻𝗴 𝗮𝘁𝘁𝗮𝗰𝗸 𝗽𝗿𝗼𝗴𝗿𝗲𝘀𝘀...
 """
@@ -459,7 +510,6 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⏱️ 𝗔𝗰𝘁𝘂𝗮𝗹 𝗗𝘂𝗿𝗮𝘁𝗶𝗼𝗻: {int(duration)} seconds
 📅 𝗖𝗼𝗺𝗽𝗹𝗲𝘁𝗲𝗱: {end_time.strftime('%Y-%m-%d %H:%M:%S')} IST
-🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_completion)
@@ -484,65 +534,38 @@ def start_attack_reply(message, target, port, time):
 🔌 𝗣𝗼𝗿𝘁: {port}
 ⚠️ 𝗘𝗿𝗿𝗼𝗿: {str(e)}
 📅 𝗧𝗶𝗺𝗲: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
-🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
 """
         for admin in admin_id:
             bot.send_message(admin, admin_failure)
 
-# Add new proxy command handler
-@bot.message_handler(commands=['proxy'])
-def show_proxy(message):
-    user_id = str(message.chat.id)
-    users = read_users()
-    
-    if user_id not in admin_owner and user_id not in users:
-        bot.reply_to(message, "⛔️ 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱 𝘁𝗼 𝘂𝘀𝗲 𝘁𝗵𝗶𝘀 𝗰𝗼𝗺𝗺𝗮𝗻𝗱.")
-        return
 
-    proxy = generate_random_proxy()
-    response = f"""
-🌐 𝗣𝗿𝗼𝘅𝘆 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱:
-━━━━━━━━━━━━━━━
-🔒 𝗣𝗿𝗼𝘅𝘆: {proxy}
-⏰ 𝗚𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱: {datetime.now(IST).strftime('%Y-%m-%d %H:%M:%S')} IST
-ℹ️ 𝗡𝗲𝘄 𝗽𝗿𝗼𝘅𝘆 𝗶𝘀 𝗴𝗲𝗻𝗲𝗿𝗮𝘁𝗲𝗱 𝗳𝗼𝗿 𝗲𝗮𝗰𝗵 𝗮𝘁𝘁𝗮𝗰𝗸
-"""
-    bot.reply_to(message, response)
-
-import random
-
-# Add this list of proxy formats
-proxy_formats = [
-    "socks5://{ip}:{port}",
-    "http://{ip}:{port}",
-    "https://{ip}:{port}"
-]
-
-# Add this function to generate random proxy
-def generate_random_proxy():
-    ip = f"{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}.{random.randint(1,255)}"
-    port = random.randint(1000,65535)
-    proxy_format = random.choice(proxy_formats)
-    return proxy_format.format(ip=ip, port=port)
-    
 @bot.message_handler(commands=['matrix'])
 def handle_matrix(message):
     user_id = str(message.chat.id)
     users = read_users()
     
-    # Authorization check
+    # Check if user is authorized
     if user_id not in admin_owner and user_id not in users:
-        bot.reply_to(message, """⛔️ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱 • 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱""")
+        bot.reply_to(message, """
+⛔️ 𝗔𝗰𝗰𝗲𝘀𝘀 𝗗𝗲𝗻𝗶𝗲𝗱
+• 𝗬𝗼𝘂 𝗮𝗿𝗲 𝗻𝗼𝘁 𝗮𝘂𝘁𝗵𝗼𝗿𝗶𝘇𝗲𝗱
+• 𝗖𝗼𝗻𝘁𝗮𝗰𝘁 @its_MATRIX_King 𝘁𝗼 𝗽𝘂𝗿𝗰𝗵𝗮𝘀𝗲
+""")
         return
 
     # Check for ongoing attacks
     if ongoing_attacks:
-        attack_info = ongoing_attacks[0]
+        attack_info = ongoing_attacks[0]  # Get the current attack
         elapsed = (datetime.now(IST) - attack_info['start_time']).total_seconds()
         remaining = max(0, attack_info['time'] - int(elapsed))
-        bot.reply_to(message, f"""⚠️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀
+        
+        bot.reply_to(message, f"""
+⚠️ 𝗔𝘁𝘁𝗮𝗰𝗸 𝗶𝗻 𝗣𝗿𝗼𝗴𝗿𝗲𝘀𝘀
+
 ⏱️ 𝗥𝗲𝗺𝗮𝗶𝗻𝗶𝗻𝗴: {remaining} seconds
-📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 𝗳𝗼𝗿 𝘁𝗵𝗲 𝗰𝘂𝗿𝗿𝗲𝗻𝘁 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗼 𝗳𝗶𝗻𝗶𝘀𝗵""")
+
+📝 𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁 𝗳𝗼𝗿 𝘁𝗵𝗲 𝗰𝘂𝗿𝗿𝗲𝗻𝘁 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗼 𝗳𝗶𝗻𝗶𝘀𝗵
+""")
         return
 
     # Parse command arguments
@@ -551,9 +574,11 @@ def handle_matrix(message):
         bot.reply_to(message, """
 📝 𝗨𝘀𝗮𝗴𝗲: /matrix <target> <port> <time>
 𝗘𝘅𝗮𝗺𝗽𝗹𝗲: /matrix 1.1.1.1 80 120
+
 ⚠️ 𝗟𝗶𝗺𝗶𝘁𝗮𝘁𝗶𝗼𝗻𝘀:
 • 𝗠𝗮𝘅 𝘁𝗶𝗺𝗲: 200 𝘀𝗲𝗰𝗼𝗻𝗱𝘀
-• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 5 𝗺𝗶𝗻𝘂𝘁𝗲𝘀""")
+• 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻: 5 𝗺𝗶𝗻𝘂𝘁𝗲𝘀
+""")
         return
 
     try:
@@ -561,18 +586,31 @@ def handle_matrix(message):
         port = int(args[2])
         time = int(args[3])
 
-        # Time limit validation
+        # Validate time limit
         if time > 200:
             bot.reply_to(message, "⚠️ 𝗠𝗮𝘅𝗶𝗺𝘂𝗺 𝗮𝘁𝘁𝗮𝗰𝗸 𝘁𝗶𝗺𝗲 𝗶𝘀 200 𝘀𝗲𝗰𝗼𝗻𝗱𝘀.")
             return
 
+        # Check cooldown for non-admin users
+        if user_id not in admin_owner:
+            if user_id in attack_cooldown:
+                remaining = attack_cooldown[user_id] - datetime.now(IST)
+                if remaining.total_seconds() > 0:
+                    minutes = int(remaining.total_seconds() // 60)
+                    seconds = int(remaining.total_seconds() % 60)
+                    bot.reply_to(message, f"""
+⏳ 𝗖𝗼𝗼𝗹𝗱𝗼𝘄𝗻 𝗔𝗰𝘁𝗶𝘃𝗲
+𝗣𝗹𝗲𝗮𝘀𝗲 𝘄𝗮𝗶𝘁: {minutes}m {seconds}s
+""")
+                    return
+
         # Start the attack
         start_attack_reply(message, target, port, time)
-        
+
         # Set cooldown for non-admin users
         if user_id not in admin_owner:
-            attack_cooldown[user_id] = datetime.now(IST) + timedelta(seconds=5)
-            
+            attack_cooldown[user_id] = datetime.now(IST) + timedelta(minutes=5)
+
     except ValueError:
         bot.reply_to(message, "❌ 𝗘𝗿𝗿𝗼𝗿: 𝗣𝗼𝗿𝘁 𝗮𝗻𝗱 𝘁𝗶𝗺𝗲 𝗺𝘂𝘀𝘁 𝗯𝗲 𝗻𝘂𝗺𝗯𝗲𝗿𝘀.")
 
@@ -749,6 +787,8 @@ def welcome_start(message):
 📢 𝗝𝗢𝗜𝗡 𝗖𝗛𝗔𝗡𝗡𝗘𝗟:
 ➡️ @MATRIX_CHEATS
 
+👨‍💻 𝗥𝗲𝘀𝗲𝗹𝗹𝗲𝗿𝗣𝗮𝗻𝗲𝗹 𝗕𝘂𝘆: 
+➡️ @its_MATRIX_King
 👨‍💻 𝗢𝗪𝗡𝗘𝗥/𝗕𝗨𝗬:
 ➡️ @its_MATRIX_King
 '''
